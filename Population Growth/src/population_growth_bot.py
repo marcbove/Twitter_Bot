@@ -1,13 +1,11 @@
 # libraries
 import collections
-
 import tweepy
 import yaml
 import time
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from selenium import webdriver
-
 
 with open(r'../util/keys.yaml') as f:
     try:
@@ -36,16 +34,16 @@ def population_growth():
     return births_value, deaths_value
 
 
-def create_tweet(bths, dths):
-    net_growth = bths - dths
-    if bths > 0:
-        bths = '+' + str(bths)
-    if dths > 0:
-        dths = '+' + str(dths)
+def create_tweet(births, deaths):
+    net_growth = births - deaths
+    if births > 0:
+        births = '+' + str(births)
+    if deaths > 0:
+        deaths = '+' + str(deaths)
     if net_growth > 0:
         net_growth = '+' + str(net_growth)
     return 'Since last hour:\n     Births: {}\n     Deaths: {}\n     World population: {}\n#World #Population #Growth #Bot'\
-        .format(bths, dths, net_growth)
+        .format(births, deaths, net_growth)
 
 
 class CircularQueue:
@@ -58,7 +56,7 @@ class CircularQueue:
 
     # Adding elements to the queue
     def enqueue(self, data):
-        if self.size() == self.maxSize-1:
+        if self.size() == self.maxSize - 1:
             self.dequeue()
         self.queue.append(data)
         self.tail = (self.tail + 1) % self.maxSize
@@ -76,16 +74,16 @@ class CircularQueue:
     def size(self):
         if self.tail >= self.head:
             return self.tail - self.head
-        return self.maxSize - (self.head-self.tail)
+        return self.maxSize - (self.head - self.tail)
 
     def get_queue(self):
         return self.queue
 
 
 if __name__ == "__main__":
-    #auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    #auth.set_access_token(access_token, access_secret)
-    #api = tweepy.API(auth)
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+    api = tweepy.API(auth)
     births_last_hour = 0
     deaths_last_hour = 0
     MAX_SIZE = 8
@@ -131,7 +129,7 @@ if __name__ == "__main__":
             population.enqueue(net)
             date.enqueue(day)
 
-            #plt.figure(figsize=(120, 80))
+            # plt.figure(figsize=(120, 80))
             plt.xlabel('Date')
             plt.ylabel('Population')
             plt.plot(date.get_queue(), population.get_queue(), 'g-o')
@@ -145,6 +143,6 @@ if __name__ == "__main__":
             with open('../data/population_data.yaml', 'w') as d:
                 yaml.safe_dump(dictionary, d)
 
-            #api.update_with_media('../img/plot.png', tweet)
+            # api.update_with_media('../img/plot.png', tweet)
             print(tweet + '\n')
             time.sleep(2)
