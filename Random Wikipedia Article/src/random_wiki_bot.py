@@ -1,13 +1,13 @@
-import tweepy
-from bs4 import BeautifulSoup
-from urllib.request import urlopen
 import re
-import time
+import tweepy
 import yaml
+import time
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
 
 # Constants
 MAX_CHAR = 240
-MIN_SENTENCES = 50
+MIN_SENTENCES = 140
 
 with open(r'../../util/keys.yaml') as f:
     try:
@@ -26,7 +26,7 @@ def extract_text():
     txt = ''
 
     with urlopen('https://en.wikipedia.org/wiki/Special:Random') as response:
-        url = response.geturl()[8:]
+        link = response.geturl()[8:]
         soup = BeautifulSoup(response, 'html.parser')
 
     for p in soup.find_all('p'):
@@ -36,21 +36,18 @@ def extract_text():
     txt = re.sub(' +', ' ', txt)
     txt = [x for x in map(str.strip, txt.split('. ')) if x]
 
-    return txt, url
+    return txt, link
 
 
-def compose_tweet(s, u):
+def compose_tweet(s):
     proto_tweet = twt = ''
-    u = '\n' + u
-    loops = 0
 
     for i in range(len(s)):
         proto_tweet += s[i] + '. '
-        if len(proto_tweet + u) < MAX_CHAR:
+        if len(proto_tweet) < MAX_CHAR:
             twt = proto_tweet
-            loops += 1
         else:
-            return twt + u, loops
+            return twt, i
 
 
 def not_interesting(sentence_array):
@@ -62,21 +59,24 @@ def not_interesting(sentence_array):
 
 if __name__ == '__main__':
 
-    # auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    # auth.set_access_token(access_token, access_secret)
-    # api = tweepy.API(auth)
-    asd = 0
-    while asd < 15:
-        asd += 1
-        web = ''
-        sentences = ['']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+    api = tweepy.API(auth)
 
+    url = ''
+    sentences = ['']
+
+    while True:
         while not_interesting(sentences):
-            sentences, web = extract_text()
+            sentences, url = extract_text()
 
-        tweet, err = compose_tweet(sentences, web)
+        tweet, num_sentences = compose_tweet(sentences)
 
-        if err > 0:
-            time.sleep(10)
+        if num_sentences > 0:
+            try:
+                status = api.update_status(status=tweet)
+                api.update_status(status=url, in_reply_to_status_id=status.id)
+            except tweepy.error.TweepError:
+                print('DUPLICATED TWEET')
             print(tweet)
-            # api.update_status(tweet)
+            time.sleep(14400)
